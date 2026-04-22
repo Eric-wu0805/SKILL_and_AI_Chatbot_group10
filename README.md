@@ -181,7 +181,10 @@ CREATE TABLE messages (
 在 `screenshots/` 資料夾放入以下截圖：
 
 - `chat.png`：聊天機器人主畫面，**需包含至少一輪完整的對話**
+- <img width="1918" height="888" alt="image" src="https://github.com/user-attachments/assets/de390c8d-d803-4335-89f8-d4e95c25d41b" />
+
 - `history.png`：對話歷史或多 session 切換的畫面
+<img width="1917" height="901" alt="image" src="https://github.com/user-attachments/assets/fffe42e3-534e-4f0f-86b4-826b3aecbbce" />
 
 ### 5. 心得報告（本 README.md 下方）
 
@@ -242,8 +245,8 @@ uvicorn app:app --reload
 
 ## 心得報告
 
-**姓名**：
-**學號**：
+**姓名**：吳宸宇
+**學號**：D1173579
 
 ### 問題與反思
 
