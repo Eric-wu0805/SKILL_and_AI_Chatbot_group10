@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 聊天機器人</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f0f1a;--sidebar:#161625;--chat:#1a1a2e;--input-bg:#232340;--accent:#6c63ff;--accent2:#ff6584;--text:#e8e8f0;--text2:#9494b8;--msg-user:#2d2b55;--msg-ai:#1e1e3a;--border:#2a2a4a;--hover:#252545;--success:#4ade80;--danger:#f87171}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden}
+.sidebar{width:280px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:transform .3s}
+.sidebar-header{padding:20px;border-bottom:1px solid var(--border)}
+.sidebar-header h2{font-size:1.2em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.new-chat-btn{width:100%;padding:12px;margin-top:12px;background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:.95em;transition:all .3s}
+.new-chat-btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(108,99,255,.4)}
+.session-list{flex:1;overflow-y:auto;padding:8px}
+.session-item{padding:12px 14px;margin:4px 0;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .2s;border:1px solid transparent}
+.session-item:hover{background:var(--hover);border-color:var(--border)}
+.session-item.active{background:var(--accent);background:linear-gradient(135deg,rgba(108,99,255,.3),rgba(139,92,246,.2));border-color:var(--accent)}
+.session-item .title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.9em}
+.session-item .del-btn{opacity:0;background:none;border:none;color:var(--danger);cursor:pointer;font-size:1.1em;padding:2px 6px;border-radius:4px;transition:all .2s}
+.session-item:hover .del-btn{opacity:1}
+.sidebar-footer{padding:12px;border-top:1px solid var(--border)}
+.sidebar-footer button{width:100%;padding:10px;background:var(--input-bg);color:var(--text2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.85em;transition:all .2s}
+.sidebar-footer button:hover{border-color:var(--accent);color:var(--text)}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.chat-header{padding:16px 24px;border-bottom:1px solid var(--border);background:var(--sidebar);display:flex;align-items:center;gap:12px}
+.chat-header .menu-btn{display:none;background:none;border:none;color:var(--text);font-size:1.4em;cursor:pointer}
+.chat-header h3{font-size:1.05em;flex:1}
+.messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+.msg{display:flex;gap:12px;max-width:85%;animation:fadeIn .3s ease}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1em;flex-shrink:0}
+.msg.user .avatar{background:linear-gradient(135deg,var(--accent),#8b5cf6)}
+.msg.assistant .avatar{background:linear-gradient(135deg,var(--accent2),#f59e0b)}
+.msg .bubble{padding:14px 18px;border-radius:16px;line-height:1.6;font-size:.95em;word-wrap:break-word;white-space:pre-wrap}
+.msg.user .bubble{background:var(--msg-user);border-bottom-right-radius:4px}
+.msg.assistant .bubble{background:var(--msg-ai);border-bottom-left-radius:4px}
+.msg .bubble img{max-width:300px;max-height:250px;border-radius:8px;margin-top:8px;display:block}
+.msg .time{font-size:.7em;color:var(--text2);margin-top:4px;text-align:right}
+.msg-actions{display:flex;gap:6px;margin-top:6px}
+.msg-actions button{background:var(--input-bg);border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:.8em;transition:all .2s}
+.msg-actions button:hover{border-color:var(--accent);color:var(--text)}
+.input-area{padding:16px 24px;border-top:1px solid var(--border);background:var(--sidebar)}
+.input-wrapper{display:flex;gap:10px;align-items:flex-end;max-width:900px;margin:0 auto}
+.file-preview{display:none;padding:8px;margin-bottom:8px;background:var(--input-bg);border-radius:8px;align-items:center;gap:8px;max-width:900px;margin-left:auto;margin-right:auto}
+.file-preview.show{display:flex}
+.file-preview img{max-height:60px;border-radius:6px}
+.file-preview .name{flex:1;font-size:.85em;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-preview .remove{background:none;border:none;color:var(--danger);cursor:pointer;font-size:1.1em}
+.input-box{flex:1;background:var(--input-bg);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-size:.95em;resize:none;max-height:120px;min-height:46px;outline:none;font-family:inherit;transition:border-color .2s}
+.input-box:focus{border-color:var(--accent)}
+.input-btns{display:flex;gap:6px}
+.icon-btn{width:44px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2em;transition:all .2s}
+.icon-btn:hover{border-color:var(--accent);background:rgba(108,99,255,.15)}
+.icon-btn.send{background:linear-gradient(135deg,var(--accent),#8b5cf6);border:none;color:#fff}
+.icon-btn.send:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(108,99,255,.4)}
+.icon-btn.stop{background:var(--danger);border:none;color:#fff}
+.typing{display:flex;gap:4px;padding:8px 14px}
+.typing span{width:8px;height:8px;background:var(--accent);border-radius:50%;animation:bounce .6s infinite alternate}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text2);gap:16px}
+.empty-state .icon{font-size:4em;opacity:.3}
+.empty-state p{font-size:1.1em}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--sidebar);border:1px solid var(--border);border-radius:16px;padding:24px;width:90%;max-width:500px;max-height:70vh;overflow-y:auto}
+.modal h3{margin-bottom:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.memory-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--input-bg);border-radius:8px;margin:6px 0}
+.memory-item .info{flex:1}
+.memory-item .key{font-size:.85em;color:var(--accent);font-weight:600}
+.memory-item .val{font-size:.9em;color:var(--text)}
+.modal .close-btn{margin-top:16px;padding:10px 20px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);border-radius:8px;cursor:pointer;transition:all .2s}
+.modal .close-btn:hover{border-color:var(--accent)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{to{transform:translateY(-6px)}}
+.messages::-webkit-scrollbar,.session-list::-webkit-scrollbar{width:6px}
+.messages::-webkit-scrollbar-thumb,.session-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+@media(max-width:768px){
+.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%)}
+.sidebar.open{transform:translateX(0)}
+.chat-header .menu-btn{display:block}
+.msg{max-width:95%}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h2>🤖 AI Chatbot</h2>
+    <button class="new-chat-btn" onclick="newChat()">＋ 新對話</button>
+  </div>
+  <div class="session-list" id="sessionList"></div>
+  <div class="sidebar-footer">
+    <button onclick="openMemories()">🧠 記憶管理</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="chat-header">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <h3 id="chatTitle">選擇或建立對話</h3>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">💬</div>
+      <p>開始一段新對話吧！</p>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="file-preview" id="filePreview">
+      <img id="fileThumb" src="" alt="">
+      <span class="name" id="fileName"></span>
+      <button class="remove" onclick="clearFile()">✕</button>
+    </div>
+    <div class="input-wrapper">
+      <input type="file" id="fileInput" hidden accept="image/*,.pdf,.txt" onchange="handleFile(event)">
+      <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="上傳檔案">📎</button>
+      <textarea class="input-box" id="msgInput" placeholder="輸入訊息..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <div class="input-btns">
+        <button class="icon-btn send" id="sendBtn" onclick="sendMessage()" title="送出">➤</button>
+        <button class="icon-btn stop" id="stopBtn" style="display:none" onclick="stopGeneration()" title="停止">■</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="memoryModal">
+  <div class="modal">
+    <h3>🧠 記憶管理</h3>
+    <div id="memoryList"><p style="color:var(--text2)">載入中...</p></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="close-btn" onclick="clearAllMemories()">🗑️ 清除全部</button>
+      <button class="close-btn" onclick="closeMemories()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentSession = null;
+let uploadedFile = null;
+let abortController = null;
+let isGenerating = false;
+
+// --- Sessions ---
+async function loadSessions() {
+  const res = await fetch('/api/sessions');
+  const sessions = await res.json();
+  const list = document.getElementById('sessionList');
+  list.innerHTML = '';
+  sessions.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'session-item' + (currentSession === s.id ? ' active' : '');
+    div.innerHTML = `<span class="title">${esc(s.title)}</span><button class="del-btn" onclick="event.stopPropagation();deleteSession('${s.id}')">🗑</button>`;
+    div.onclick = () => switchSession(s.id, s.title);
+    list.appendChild(div);
+  });
+}
+
+async function newChat() {
+  const res = await fetch('/api/sessions', {method:'POST'});
+  const s = await res.json();
+  currentSession = s.id;
+  document.getElementById('chatTitle').textContent = s.title;
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('emptyState')?.remove();
+  await loadSessions();
+  closeSidebar();
+}
+
+async function deleteSession(id) {
+  if (!confirm('確定刪除此對話？')) return;
+  await fetch(`/api/sessions/${id}`, {method:'DELETE'});
+  if (currentSession === id) {
+    currentSession = null;
+    document.getElementById('chatTitle').textContent = '選擇或建立對話';
+    document.getElementById('messages').innerHTML = '<div class="empty-state" id="emptyState"><div class="icon">💬</div><p>開始一段新對話吧！</p></div>';
+  }
+  await loadSessions();
+}
+
+async function switchSession(id, title) {
+  currentSession = id;
+  document.getElementById('chatTitle').textContent = title;
+  await loadMessages(id);
+  await loadSessions();
+  closeSidebar();
+}
+
+// --- Messages ---
+async function loadMessages(sessionId) {
+  const res = await fetch(`/api/sessions/${sessionId}/messages`);
+  const msgs = await res.json();
+  const container = document.getElementById('messages');
+  container.innerHTML = '';
+  msgs.forEach((m, i) => appendMessage(m.role, m.content, m.timestamp, m.file_path, m.file_type, i === msgs.length - 1 && m.role === 'assistant'));
+  container.scrollTop = container.scrollHeight;
+}
+
+function appendMessage(role, content, timestamp, filePath, fileType, showRegen) {
+  const container = document.getElementById('messages');
+  document.getElementById('emptyState')?.remove();
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const avatar = role === 'user' ? '👤' : '🤖';
+  const time = timestamp ? new Date(timestamp).toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'}) : '';
+  let extra = '';
+  if (filePath && fileType && fileType.startsWith('image/')) {
+    extra = `<img src="${filePath}" alt="uploaded">`;
+  } else if (filePath) {
+    extra = `<br><a href="${filePath}" target="_blank" style="color:var(--accent)">📄 查看附件</a>`;
+  }
+  let actions = '';
+  if (showRegen && role === 'assistant') {
+    actions = `<div class="msg-actions"><button onclick="regenerate()">🔄 重新生成</button></div>`;
+  }
+  div.innerHTML = `<div class="avatar">${avatar}</div><div><div class="bubble">${formatContent(content)}${extra}</div><div class="time">${time}</div>${actions}</div>`;
+  container.appendChild(div);
+  return div;
+}
+
+function formatContent(text) {
+  if (!text) return '';
+  return esc(text).replace(/\n/g, '<br>');
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// --- Send ---
+async function sendMessage() {
+  if (isGenerating) return;
+  const input = document.getElementById('msgInput');
+  const content = input.value.trim();
+  if (!content) return;
+  if (!currentSession) await newChat();
+
+  input.value = '';
+  autoResize(input);
+
+  const body = {session_id: currentSession, content};
+  if (uploadedFile) {
+    body.file_path = uploadedFile.file_path;
+    body.file_type = uploadedFile.file_type;
+  }
+
+  appendMessage('user', content, new Date().toISOString(), uploadedFile?.file_path, uploadedFile?.file_type, false);
+  clearFile();
+  scrollDown();
+
+  // Show typing
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'msg assistant';
+  typingDiv.id = 'typing';
+  typingDiv.innerHTML = '<div class="avatar">🤖</div><div class="typing"><span></span><span></span><span></span></div>';
+  document.getElementById('messages').appendChild(typingDiv);
+  scrollDown();
+
+  isGenerating = true;
+  document.getElementById('sendBtn').style.display = 'none';
+  document.getElementById('stopBtn').style.display = 'flex';
+  abortController = new AbortController();
+
+  try {
+    const res = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), signal:abortController.signal});
+    document.getElementById('typing')?.remove();
+
+    const aiDiv = appendMessage('assistant', '', new Date().toISOString(), null, null, false);
+    const bubble = aiDiv.querySelector('.bubble');
+    let fullText = '';
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream:true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.text && !data.done) {
+            fullText += data.text;
+            bubble.innerHTML = formatContent(fullText);
+            scrollDown();
+          }
+          if (data.done) {
+            fullText = data.full_text || fullText;
+            bubble.innerHTML = formatContent(fullText);
+            // Add regen button
+            const actDiv = document.createElement('div');
+            actDiv.className = 'msg-actions';
+            actDiv.innerHTML = '<button onclick="regenerate()">🔄 重新生成</button>';
+            bubble.parentElement.appendChild(actDiv);
+          }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {
+    document.getElementById('typing')?.remove();
+    if (e.name !== 'AbortError') appendMessage('assistant', '❌ 連線錯誤：' + e.message, new Date().toISOString(), null, null, false);
+  }
+
+  isGenerating = false;
+  document.getElementById('sendBtn').style.display = 'flex';
+  document.getElementById('stopBtn').style.display = 'none';
+  abortController = null;
+  scrollDown();
+  loadSessions();
+}
+
+function stopGeneration() {
+  if (abortController) abortController.abort();
+}
+
+async function regenerate() {
+  if (isGenerating || !currentSession) return;
+  isGenerating = true;
+  document.getElementById('sendBtn').style.display = 'none';
+  document.getElementById('stopBtn').style.display = 'flex';
+  abortController = new AbortController();
+
+  // Remove last AI message visually
+  const msgs = document.querySelectorAll('.msg.assistant');
+  if (msgs.length) msgs[msgs.length-1].remove();
+  const userMsgs = document.querySelectorAll('.msg.user');
+  const lastUserContent = userMsgs.length ? userMsgs[userMsgs.length-1].querySelector('.bubble').textContent : '';
+
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'msg assistant';
+  typingDiv.id = 'typing';
+  typingDiv.innerHTML = '<div class="avatar">🤖</div><div class="typing"><span></span><span></span><span></span></div>';
+  document.getElementById('messages').appendChild(typingDiv);
+  scrollDown();
+
+  try {
+    const res = await fetch('/api/chat/regenerate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({session_id:currentSession}), signal:abortController.signal});
+    document.getElementById('typing')?.remove();
+
+    const aiDiv = appendMessage('assistant', '', new Date().toISOString(), null, null, false);
+    const bubble = aiDiv.querySelector('.bubble');
+    let fullText = '';
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream:true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.text && !data.done) { fullText += data.text; bubble.innerHTML = formatContent(fullText); scrollDown(); }
+          if (data.done) {
+            fullText = data.full_text || fullText;
+            bubble.innerHTML = formatContent(fullText);
+            const actDiv = document.createElement('div');
+            actDiv.className = 'msg-actions';
+            actDiv.innerHTML = '<button onclick="regenerate()">🔄 重新生成</button>';
+            bubble.parentElement.appendChild(actDiv);
+          }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {
+    document.getElementById('typing')?.remove();
+  }
+
+  isGenerating = false;
+  document.getElementById('sendBtn').style.display = 'flex';
+  document.getElementById('stopBtn').style.display = 'none';
+  abortController = null;
+  scrollDown();
+}
+
+// --- File Upload ---
+async function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch('/api/upload', {method:'POST', body:form});
+    if (!res.ok) { alert((await res.json()).detail); return; }
+    uploadedFile = await res.json();
+    document.getElementById('fileName').textContent = file.name;
+    const thumb = document.getElementById('fileThumb');
+    if (file.type.startsWith('image/')) { thumb.src = URL.createObjectURL(file); thumb.style.display = 'block'; }
+    else { thumb.style.display = 'none'; }
+    document.getElementById('filePreview').classList.add('show');
+  } catch(err) { alert('上傳失敗'); }
+  e.target.value = '';
+}
+
+function clearFile() {
+  uploadedFile = null;
+  document.getElementById('filePreview').classList.remove('show');
+  document.getElementById('fileThumb').src = '';
+  document.getElementById('fileName').textContent = '';
+}
+
+// --- Memories ---
+async function openMemories() {
+  document.getElementById('memoryModal').classList.add('show');
+  const res = await fetch('/api/memories');
+  const items = await res.json();
+  const list = document.getElementById('memoryList');
+  if (!items.length) { list.innerHTML = '<p style="color:var(--text2)">尚無記憶資料</p>'; return; }
+  list.innerHTML = items.map(m => `<div class="memory-item"><div class="info"><div class="key">${esc(m.key)}</div><div class="val">${esc(m.value)}</div></div><button class="del-btn" style="opacity:1" onclick="deleteMemory(${m.id})">🗑</button></div>`).join('');
+}
+function closeMemories() { document.getElementById('memoryModal').classList.remove('show'); }
+async function deleteMemory(id) { await fetch(`/api/memories/${id}`, {method:'DELETE'}); openMemories(); }
+async function clearAllMemories() { if(!confirm('確定清除所有記憶？'))return; await fetch('/api/memories', {method:'DELETE'}); openMemories(); }
+
+// --- Utils ---
+function scrollDown() { const c = document.getElementById('messages'); c.scrollTop = c.scrollHeight; }
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); }
+
+// --- Init ---
+loadSessions();
+</script>
+</body>
+</html>
