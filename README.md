@@ -191,33 +191,33 @@ CREATE TABLE messages (
 在本 README 的**心得報告**區填寫。
 
 ---
-
-## 專案結構範例
+## 專案結構
 
 ```
-your-repo/
+SKILL_and_AI_Chatbot_group10/
 ├── .agents/
 │   └── skills/
-│       ├── prd/SKILL.md
-│       ├── architecture/SKILL.md
-│       ├── models/SKILL.md
-│       ├── implement/SKILL.md
-│       ├── test/SKILL.md
-│       └── commit/SKILL.md
+│       ├── prd/SKILL.md            ← 需求確認 Skill
+│       ├── architecture/SKILL.md   ← 架構設計 Skill
+│       ├── models/SKILL.md         ← 資料模型 Skill
+│       ├── implement/SKILL.md      ← 程式碼生成 Skill（HTML + FastAPI + SQLite）
+│       ├── test/SKILL.md           ← 測試驗證 Skill
+│       └── commit/SKILL.md         ← 提交推送 Skill（使用 Antigravity 預設）
 ├── docs/
-│   ├── PRD.md
-│   ├── ARCHITECTURE.md
-│   └── MODELS.md
+│   ├── PRD.md                      ← 產品需求文件
+│   ├── ARCHITECTURE.md             ← 系統架構設計文件
+│   └── MODELS.md                   ← 資料模型設計文件
 ├── templates/
-│   └── index.html
+│   └── index.html                  ← 前端聊天介面（HTML + CSS + JS）
 ├── screenshots/
-│   ├── chat.png
-│   ├── history.png
-│   └── skill.png
-├── app.py
-├── requirements.txt
-├── .env.example
-└── README.md          ← 本檔案（含心得報告）
+│   ├── chat.png                    ← 聊天主畫面截圖
+│   └── history.png                 ← 對話歷史截圖
+├── uploads/                        ← 使用者上傳檔案存放目錄
+├── app.py                          ← FastAPI 後端主程式
+├── requirements.txt                ← Python 依賴套件
+├── .env.example                    ← 環境變數範例
+├── .gitignore                      ← Git 忽略規則
+└── README.md                       ← 本檔案（含功能說明與心得報告）
 ```
 
 ---
